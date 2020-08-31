@@ -1,4 +1,4 @@
-defmodule Todo.ServerTest do
+defmodule Todo.CacheTest do
   use ExUnit.Case
   
   describe "todo cache" do
@@ -12,6 +12,13 @@ defmodule Todo.ServerTest do
       Enum.each(1..10_000, fn index -> Todo.Cache.server_process(cache, "to-do list #{index}") end)
       
       assert :erlang.system_info(:process_count) >= 10_000
+    end
+    
+    test "server_process", %{cache: cache} do
+      bob_pid = Todo.Cache.server_process(cache, "bob")
+      
+      assert bob_pid != Todo.Cache.server_process(cache, "alice")
+      assert bob_pid == Todo.Cache.server_process(cache, "bob")
     end
     
     
