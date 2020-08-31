@@ -18,31 +18,31 @@ defmodule Todo.Database do
   # Callback Functions
   def init(_) do
     File.mkdir_p!(@db_folder)
-    {:ok, nil}
+    workers = (0..2)
+    |> Enum.each(fn index -> Map.put(%{}, index, spawn(fn -> Todo.DatabaseWorker.start(@db_folder)end))end)
+    
+    {:ok, workers}
   end
   
   def handle_cast({:store, key, data}, state) do
-    spawn(fn -> # This line spawns a one-off process to handle storing the info, so the database process can accept a new request
-        key
-      |> file_name()
-      |> File.write!(:erlang.term_to_binary(data))
-    end)
+    worker = choose_worker(key, state)
+    
+    Todo.DatabaseWorker.store(worker, key, state)
 
     {:noreply, state}
   end
   
-  def handle_call({:get, key}, caller, state) do
-    spawn(fn ->
-      data = case File.read(file_name(key)) do
-        {:ok, contents} -> :erlang.binary_to_term(contents)
-        _-> nil
-      end 
-      GenServer.reply(caller, data)
-    end)
+  def handle_call({:get, key}, _caller, state) do
+    worker = choose_worker(key, state)
     
+    data = Todo.DatabaseWorker.get(worker, key)
     
-      
-      {:noreply, state}
+    {:reply, data, state}
+  end
+  
+  defp choose_worker(key, state) do
+    hashed_key = :erlang.phash2(key, 3)
+    state[hashed_key]
   end
   
   defp file_name(key) do

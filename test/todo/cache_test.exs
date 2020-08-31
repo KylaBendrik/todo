@@ -1,26 +1,38 @@
 defmodule Todo.CacheTest do
   use ExUnit.Case
   
-  describe "todo cache" do
-    setup do
-      {:ok, cache} = Todo.Cache.start()
-      
-      %{cache: cache}
-    end
-    
-    test "Set up a cache with 100,000 lists and verify you actually have that many running.", %{cache: cache} do
-      Enum.each(1..10_000, fn index -> Todo.Cache.server_process(cache, "to-do list #{index}") end)
-      
-      assert :erlang.system_info(:process_count) >= 10_000
-    end
-    
-    test "server_process", %{cache: cache} do
-      bob_pid = Todo.Cache.server_process(cache, "bob")
-      
-      assert bob_pid != Todo.Cache.server_process(cache, "alice")
-      assert bob_pid == Todo.Cache.server_process(cache, "bob")
-    end
-    
-    
+  test "server_process" do
+    {:ok, cache} = Todo.Cache.start()
+    bob_pid = Todo.Cache.server_process(cache, "bob")
+
+    assert bob_pid != Todo.Cache.server_process(cache, "alice")
+    assert bob_pid == Todo.Cache.server_process(cache, "bob")
+  end
+
+  test "to-do operations" do
+    {:ok, cache} = Todo.Cache.start()
+    alice = Todo.Cache.server_process(cache, "alice")
+    Todo.Server.add_entry(alice, %{date: ~D[2018-12-19], title: "Dentist"})
+    entries = Todo.Server.entries(alice, ~D[2018-12-19])
+
+    assert [%{date: ~D[2018-12-19], title: "Dentist"}] = entries
+  end
+
+  test "persistence" do
+    {:ok, cache} = Todo.Cache.start()
+
+    john = Todo.Cache.server_process(cache, "john")
+    Todo.Server.add_entry(john, %{date: ~D[2018-12-20], title: "Shopping"})
+    assert 1 == length(Todo.Server.entries(john, ~D[2018-12-20]))
+
+    GenServer.stop(cache)
+    {:ok, cache} = Todo.Cache.start()
+
+    entries =
+      cache
+      |> Todo.Cache.server_process("john")
+      |> Todo.Server.entries(~D[2018-12-20])
+
+    assert [%{date: ~D[2018-12-20], title: "Shopping"}] = entries
   end
 end
