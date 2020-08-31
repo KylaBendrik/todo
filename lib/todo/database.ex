@@ -22,20 +22,27 @@ defmodule Todo.Database do
   end
   
   def handle_cast({:store, key, data}, state) do
-    key
-    |> file_name()
-    |> File.write!(:erlang.term_to_binary(data))
-    
+    spawn(fn -> # This line spawns a one-off process to handle storing the info, so the database process can accept a new request
+        key
+      |> file_name()
+      |> File.write!(:erlang.term_to_binary(data))
+    end)
+
     {:noreply, state}
   end
   
-  def handle_call({:get, key}, _, state) do
-    data = case File.read(file_name(key)) do
-      {:ok, contents} -> :erlang.binary_to_term(contents)
-      _-> nil
-    end 
+  def handle_call({:get, key}, caller, state) do
+    spawn(fn ->
+      data = case File.read(file_name(key)) do
+        {:ok, contents} -> :erlang.binary_to_term(contents)
+        _-> nil
+      end 
+      GenServer.reply(caller, data)
+    end)
+    
+    
       
-      {:reply, data, state}
+      {:noreply, state}
   end
   
   defp file_name(key) do
