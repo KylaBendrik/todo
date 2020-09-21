@@ -21,6 +21,7 @@ defmodule Todo.Cache do
     case Map.fetch(todo_servers, todo_list_name) do
       {:ok, todo_server} ->
         {:reply, todo_server, todo_servers}
+<<<<<<< HEAD
 
       :error ->
         {:ok, new_server} = Todo.Server.start_link(todo_list_name)
@@ -30,6 +31,12 @@ defmodule Todo.Cache do
           new_server,
           Map.put(todo_servers, todo_list_name, new_server)
         }
+=======
+      :error -> 
+        {:ok, new_server} = Todo.Server.start_link(todo_list_name)
+        # if there is no return value, create a new server and add it into the list
+        {:reply, new_server, Map.put(todo_servers, todo_list_name, new_server)}
+>>>>>>> master
     end
   end
 end
