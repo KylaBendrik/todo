@@ -24,7 +24,10 @@ defmodule Todo.Cache do
   end
 
   def server_process(todo_list_name) do
-    GenServer.call(__MODULE__, {:server_process, todo_list_name})
+    case start_child(todo_list_name) do
+      {:ok, pid} -> pid # a new server is started.
+      {:error, {:already_started, pid}} -> pid #The server is already running
+    end
   end
 
   @impl GenServer
@@ -48,7 +51,7 @@ defmodule Todo.Cache do
         }
     end
   end
-  
+
   defp start_child(todo_list_name) do
     DynamicSupervisor.start_child(__MODULE__, {Todo.Server, todo_list_name})
   end
