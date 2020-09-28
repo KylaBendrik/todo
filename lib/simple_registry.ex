@@ -6,11 +6,11 @@ defmodule SimpleRegistry do
   end
   
   def register(name) do
-    GenServer.call(__MODULE__, {:register, key, self()})
+    GenServer.call(__MODULE__, {:register, name, self()})
   end
   
   def whereis(name) do
-    GenServer.call(__MODULE__, {:whereis, key})
+    GenServer.call(__MODULE__, {:whereis, name})
   end
   
   # CALLBACK
@@ -20,23 +20,18 @@ defmodule SimpleRegistry do
     {:ok, %{}} # The registry's state should be a map <-
   end
   
-  def handle_call({:register, name}, _from, registry) do
+  def handle_call({:register, name, pid}, _from, registry) do
     case Map.get(registry, name) do
       nil -> # If there is no process with that name, name it thusly
         Process.link(pid)
         {:reply, :ok, Map.put(registry, name, pid)} 
       _ -> # Otherwise, return an error
-        {:reply, :error, process_registry}
+        {:reply, :error, registry}
     end
   end
   
   def handle_call({:whereis, name}, _from, registry) do
-    case Map.get(registry, name) do
-      nil -> #If there is no process with that name, return nil
-        nil
-      pid -> #Otherwise, return the pid
-        pid
-    end
+    {:reply, Map.get(registry, name), registry}
   end
   
   def handle_info({:Exit, pid, _reason}, registry) do
