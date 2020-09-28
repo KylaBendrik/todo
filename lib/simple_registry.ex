@@ -2,18 +2,50 @@ defmodule SimpleRegistry do
   use GenServer
   
   def start_link() do
-    GenServer.start_link(SimpleRegistry, __MODULE__, name: __MODULE__)
+    GenServer.start_link(__MODULE__, nil, name: __MODULE__)
   end
   
   def register(name) do
-    GenServer.call(__MODULE__, name)
+    GenServer.call(__MODULE__, {:register, key, self()})
   end
   
-  def init(init_arg) do
-    {:ok, init_arg}
+  def whereis(name) do
+    GenServer.call(__MODULE__, {:whereis, key})
   end
   
-  def handle_call({:instruction, data}, _from, list_or_library) do
-    :ok
+  # CALLBACK
+  
+  def init(_) do
+    Process.flag(:trap_exit, true)
+    {:ok, %{}} # The registry's state should be a map <-
+  end
+  
+  def handle_call({:register, name}, _from, registry) do
+    case Map.get(registry, name) do
+      nil -> # If there is no process with that name, name it thusly
+        Process.link(pid)
+        {:reply, :ok, Map.put(process_registry, name, pid)} 
+      _ -> # Otherwise, return an error
+        {:reply, :error, process_registry}
+    end
+  end
+  
+  def handle_call({:whereis, name}, _from, registry) do
+    case Map.get(registry, name) do
+      nil -> #If there is no process with that name, return nil
+        nil
+      pid -> #Otherwise, return the pid
+        pid
+    end
+  end
+  
+  def handle_info({:Exit, pid, _reason}, registry) do
+    {:noreply, deregister_pid(registry, pid)}
+  end
+  
+  defp deregister_pid(registry, pid) do
+    registry
+    |> Enum.reject(fn {_key, registered_process} -> registered_process == pid end)
+    |> Enum.into(%{})
   end
 end
