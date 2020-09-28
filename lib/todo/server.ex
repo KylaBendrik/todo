@@ -29,7 +29,6 @@ defmodule Todo.Server do
   
   @expiry_idle_timeout :timer.seconds(10)
 
-<<<<<<< HEAD
   # @impl GenServer
   # def init(name) do
   #   {:ok, {name, Todo.Database.get(name) || Todo.List.new()}}
@@ -50,38 +49,6 @@ defmodule Todo.Server do
   #     {name, todo_list}
   #   }
   # end
-=======
-  @impl GenServer
-  def init(name) do
-    IO.puts("Starting to-do server for #{name}.")
-    {
-      :ok, 
-      {name, Todo.Database.get(name) || Todo.List.new()},
-      @expiry_idle_timeout
-    }
-  end
-
-  @impl GenServer
-  def handle_cast({:add_entry, new_entry}, {name, todo_list}) do
-    new_list = Todo.List.add_entry(todo_list, new_entry)
-    Todo.Database.store(name, new_list)
-    {
-      :noreply, 
-      {name, new_list}, 
-      @expiry_idle_timeout
-    }
-  end
-
-  @impl GenServer
-  def handle_call({:entries, date}, _, {name, todo_list}) do
-    {
-      :reply,
-      Todo.List.entries(todo_list, date),
-      {name, todo_list}, 
-      @expiry_idle_timeout
-    }
-  end
->>>>>>> todo_cache_expiry
   
   @impl GenServer
   def handle_info(:timeout, {name, todo_list}) do
