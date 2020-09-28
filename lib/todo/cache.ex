@@ -18,7 +18,7 @@ defmodule Todo.Cache do
   def child_spec(_arg) do
     %{
       id: __MODULE__,
-      start: {__MODULE__, :start_link, []}
+      start: {__MODULE__, :start_link, []},
       type: :supervisor
     }
   end
