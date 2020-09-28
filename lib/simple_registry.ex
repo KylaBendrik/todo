@@ -24,7 +24,7 @@ defmodule SimpleRegistry do
     case Map.get(registry, name) do
       nil -> # If there is no process with that name, name it thusly
         Process.link(pid)
-        {:reply, :ok, Map.put(process_registry, name, pid)} 
+        {:reply, :ok, Map.put(registry, name, pid)} 
       _ -> # Otherwise, return an error
         {:reply, :error, process_registry}
     end
