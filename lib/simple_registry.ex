@@ -45,7 +45,7 @@ defmodule SimpleRegistry do
   # end
   
   def handle_info({:EXIT, pid, _reason}, state) do
-    :etc.match_delete(__MODULE__, {:_,  pid})
+    :ets.match_delete(__MODULE__, {:_,  pid})
     {:noreply, state}
   end
   
