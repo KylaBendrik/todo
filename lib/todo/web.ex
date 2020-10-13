@@ -38,6 +38,10 @@ defmodule Todo.Web do
       |> Plug.Conn.put_resp_content_type("text/plain")
       |> Plug.Conn.send_resp(200, formatted_entries)
   end
+  
+  match _ do
+    |> Plug.Conn.send_resp(conn, 404, "not found")
+  end
   def child_spec(_arg) do
     Plug.Adapters.Cowboy.child_spec(
       scheme: :http,

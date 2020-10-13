@@ -5,6 +5,13 @@ defmodule Todo.Server do
     IO.puts("Starting to-do server for #{name}.")
     GenServer.start_link(Todo.Server, name, name: via_tuple(name))
   end
+  
+  def whereis(name) do
+    case :global.whereis_name({__MODULE__, name}) do
+      :undefined -> nil
+      pid -> pid
+    end
+  end
 
   def add_entry(todo_server, new_entry) do
     GenServer.cast(todo_server, {:add_entry, new_entry})
@@ -14,7 +21,9 @@ defmodule Todo.Server do
     GenServer.call(todo_server, {:entries, date})
   end
   
-  @expiry_idle_timeout :timer.seconds(10)
+  defp global_name(name) do
+    {:global, {__MODULE__, name}}
+  end
 
   @impl GenServer
   def init(name) do
@@ -22,7 +31,7 @@ defmodule Todo.Server do
     {
       :ok, 
       {name, Todo.Database.get(name) || Todo.List.new()},
-      @expiry_idle_timeout
+      expiry_idle_timeout()
     }
   end
 
@@ -33,7 +42,7 @@ defmodule Todo.Server do
     {
       :noreply, 
       {name, new_list}, 
-      @expiry_idle_timeout
+      expiry_idle_timeout
     }
   end
 
@@ -43,11 +52,13 @@ defmodule Todo.Server do
       :reply,
       Todo.List.entries(todo_list, date),
       {name, todo_list}, 
-      @expiry_idle_timeout
+      expiry_idle_timeout()
     }
   end
   
   defp via_tuple(name) do
     Todo.ProcessRegistry.via_tuple({__MODULE__, name})
   end
+  
+  defp expiry_idle_timeout(), do: Apllication.fetch_env!(:todo, :todo_item_expiry)
 end
